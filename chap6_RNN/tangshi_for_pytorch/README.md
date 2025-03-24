@@ -1,0 +1,3 @@
+# tangshi_for_pytorch
+这部分训练时使用了GPU，所以修改了一些代码，用注释进行了标注
+数据集使用的是poems.txt

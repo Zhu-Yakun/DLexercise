@@ -6,6 +6,9 @@ import torch.optim as optim
 
 import rnn
 
+# 设备检测
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 start_token = 'G'
 end_token = 'E'
 batch_size = 64
@@ -128,8 +131,21 @@ def run_training():
     BATCH_SIZE = 100
 
     torch.manual_seed(5)
-    word_embedding = rnn_lstm.word_embedding( vocab_length= len(word_to_int) + 1 , embedding_dim= 100)
-    rnn_model = rnn_lstm.RNN_model(batch_sz = BATCH_SIZE,vocab_len = len(word_to_int) + 1 ,word_embedding = word_embedding ,embedding_dim= 100, lstm_hidden_dim=128)
+
+    # [修改] 模型移到GPU --------------------------------
+    word_embedding = rnn.word_embedding(vocab_length=len(word_to_int)+1, embedding_dim=100).to(device)
+    rnn_model = rnn.RNN_model(
+        batch_sz=BATCH_SIZE,
+        vocab_len=len(word_to_int)+1,
+        word_embedding=word_embedding,
+        embedding_dim=100,
+        lstm_hidden_dim=128
+    ).to(device)
+    # --------------------------------------------------
+
+    
+    # word_embedding = rnn.word_embedding( vocab_length= len(word_to_int) + 1 , embedding_dim= 100)
+    # rnn_model = rnn.RNN_model(batch_sz = BATCH_SIZE,vocab_len = len(word_to_int) + 1 ,word_embedding = word_embedding ,embedding_dim= 100, lstm_hidden_dim=128)
 
     # optimizer = optim.Adam(rnn_model.parameters(), lr= 0.001)
     optimizer=optim.RMSprop(rnn_model.parameters(), lr=0.01)
@@ -148,14 +164,28 @@ def run_training():
             for index in range(BATCH_SIZE):
                 x = np.array(batch_x[index], dtype = np.int64)
                 y = np.array(batch_y[index], dtype = np.int64)
-                x = Variable(torch.from_numpy(np.expand_dims(x,axis=1)))
-                y = Variable(torch.from_numpy(y ))
+
+                # [修改] 数据移到GPU ------------------------
+                x = Variable(torch.from_numpy(np.expand_dims(x,axis=1))).to(device)
+                y = Variable(torch.from_numpy(y)).to(device)
+                # ------------------------------------------
+
+                
+                # x = Variable(torch.from_numpy(np.expand_dims(x,axis=1)))
+                # y = Variable(torch.from_numpy(y ))
                 pre = rnn_model(x)
                 loss += loss_fun(pre , y)
                 if index == 0:
+                    # _, pre = torch.max(pre, dim=1)
+                    # print('prediction', pre.data.tolist()) # the following  three line can print the output and the prediction
+                    # print('b_y       ', y.data.tolist())   # And you need to take a screenshot and then past is to your homework paper.
+                    
+                    # [修改] 显示时移回CPU -------------------
                     _, pre = torch.max(pre, dim=1)
-                    print('prediction', pre.data.tolist()) # the following  three line can print the output and the prediction
-                    print('b_y       ', y.data.tolist())   # And you need to take a screenshot and then past is to your homework paper.
+                    print('prediction', pre.data.cpu().tolist())
+                    print('b_y       ', y.data.cpu().tolist())
+                    # --------------------------------------
+                    
                     print('*' * 30)
             loss  = loss  / BATCH_SIZE
             print("epoch  ",epoch,'batch number',batch,"loss is: ", loss.data.tolist())
@@ -165,7 +195,13 @@ def run_training():
             optimizer.step()
 
             if batch % 20 ==0:
-                torch.save(rnn_model.state_dict(), './poem_generator_rnn')
+                # torch.save(rnn_model.state_dict(), './poem_generator_rnn')
+                
+                # [修改] 保存时转CPU兼容性 -------------------
+                torch.save(rnn_model.to('cpu').state_dict(), './poem_generator_rnn')
+                rnn_model.to(device)  # 立刻移回GPU继续训练
+                # ------------------------------------------
+                
                 print("finish  save model")
 
 
@@ -194,8 +230,8 @@ def pretty_print_poem(poem):  # 令打印的结果更工整
 def gen_poem(begin_word):
     # poems_vector, word_int_map, vocabularies = process_poems2('./tangshi.txt')  #  use the other dataset to train the network
     poems_vector, word_int_map, vocabularies = process_poems1('./poems.txt')
-    word_embedding = rnn_lstm.word_embedding(vocab_length=len(word_int_map) + 1, embedding_dim=100)
-    rnn_model = rnn_lstm.RNN_model(batch_sz=64, vocab_len=len(word_int_map) + 1, word_embedding=word_embedding,
+    word_embedding = rnn.word_embedding(vocab_length=len(word_int_map) + 1, embedding_dim=100)
+    rnn_model = rnn.RNN_model(batch_sz=64, vocab_len=len(word_int_map) + 1, word_embedding=word_embedding,
                                    embedding_dim=100, lstm_hidden_dim=128)
 
     rnn_model.load_state_dict(torch.load('./poem_generator_rnn'))
@@ -217,8 +253,7 @@ def gen_poem(begin_word):
     return poem
 
 
-
-run_training()  # 如果不是训练阶段 ，请注销这一行 。 网络训练时间很长。
+# run_training()  # 如果不是训练阶段 ，请注销这一行 。 网络训练时间很长。
 
 
 pretty_print_poem(gen_poem("日"))
@@ -229,5 +264,3 @@ pretty_print_poem(gen_poem("湖"))
 pretty_print_poem(gen_poem("湖"))
 pretty_print_poem(gen_poem("湖"))
 pretty_print_poem(gen_poem("君"))
-
-
