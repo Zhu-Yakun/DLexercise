@@ -255,12 +255,19 @@ def gen_poem(begin_word):
 
 # run_training()  # 如果不是训练阶段 ，请注销这一行 。 网络训练时间很长。
 
-
 pretty_print_poem(gen_poem("日"))
+print(gen_poem("日"))
 pretty_print_poem(gen_poem("红"))
+print(gen_poem("红"))
 pretty_print_poem(gen_poem("山"))
+print(gen_poem("山"))
 pretty_print_poem(gen_poem("夜"))
+print(gen_poem("夜"))
 pretty_print_poem(gen_poem("湖"))
-pretty_print_poem(gen_poem("湖"))
-pretty_print_poem(gen_poem("湖"))
+print(gen_poem("湖"))
+pretty_print_poem(gen_poem("海"))
+print(gen_poem("海"))
+pretty_print_poem(gen_poem("月"))
+print(gen_poem("月"))
 pretty_print_poem(gen_poem("君"))
+print(gen_poem("君"))
